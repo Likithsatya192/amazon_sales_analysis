@@ -4,17 +4,17 @@ import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "browser"
 import warnings
 from pathlib import Path
 warnings.filterwarnings('ignore')
 
-# Set style for matplotlib plots
 plt.style.use('seaborn-v0_8')
 sns.set_palette("husl")
 
 def prepare_data_for_viz(df):
     df = df.copy()
-    # Convert date column to datetime (adjust column name as needed)
     date_columns = ['Date', 'date', 'Order Date', 'order_date']
     for col in date_columns:
         if col in df.columns:
@@ -23,7 +23,6 @@ def prepare_data_for_viz(df):
             df['month'] = df[col].dt.month
             df['day_of_week'] = df[col].dt.day_name()
             break
-    # Ensure amount column is numeric
     amount_columns = ['Amount', 'amount', 'Sales', 'sales', 'Revenue', 'revenue']
     for col in amount_columns:
         if col in df.columns:
@@ -35,7 +34,6 @@ def sales_overview_plots(df):
     df = prepare_data_for_viz(df)
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
     fig.suptitle('Amazon Sales Overview Dashboard', fontsize=16, fontweight='bold')
-    # Sales trend over time
     date_col = next((col for col in ['Date', 'date'] if col in df.columns), None)
     amount_col = next((col for col in ['Amount', 'amount', 'Sales', 'sales'] if col in df.columns), None)
     if date_col and amount_col:
@@ -45,14 +43,12 @@ def sales_overview_plots(df):
         axes[0, 0].set_xlabel('Date')
         axes[0, 0].set_ylabel('Sales Amount')
         axes[0, 0].tick_params(axis='x', rotation=45)
-    # Monthly sales distribution
     if 'month' in df.columns and amount_col:
         monthly_sales = df.groupby('month')[amount_col].sum()
         axes[0, 1].bar(monthly_sales.index, monthly_sales.values, color=sns.color_palette("viridis", len(monthly_sales)))
         axes[0, 1].set_title('Monthly Sales Distribution')
         axes[0, 1].set_xlabel('Month')
         axes[0, 1].set_ylabel('Total Sales')
-    # Day of week analysis
     if 'day_of_week' in df.columns and amount_col:
         dow_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
         dow_sales = df.groupby('day_of_week')[amount_col].sum().reindex(dow_order)
@@ -62,7 +58,6 @@ def sales_overview_plots(df):
         axes[1, 0].set_ylabel('Total Sales')
         axes[1, 0].set_xticks(range(len(dow_sales)))
         axes[1, 0].set_xticklabels([day[:3] for day in dow_sales.index], rotation=45)
-    # Sales distribution histogram
     if amount_col:
         axes[1, 1].hist(df[amount_col].dropna(), bins=50, color='skyblue', alpha=0.7, edgecolor='black')
         axes[1, 1].set_title('Sales Amount Distribution')
@@ -281,7 +276,3 @@ def generate_all_visualizations(df):
     print("Generating Interactive Dashboard...")
     interactive_dashboard(df)
     print("All visualizations generated successfully!")
-
-# Usage example:
-df = pd.read_csv(Path('C:/Users/Administrator/Desktop/InnoByte Services Internship/amazon_sales_analysis/data/raw/amazon_sales_data.csv'))
-generate_all_visualizations(df)

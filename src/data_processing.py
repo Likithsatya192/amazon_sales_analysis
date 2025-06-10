@@ -127,19 +127,14 @@ class DataProcessor:
         if duplicates_removed > 0:
             print(f"✅ Removed {duplicates_removed:,} duplicate rows")
         
-        # 2. Convert date columns
         self._convert_date_columns()
         
-        # 3. Clean numeric columns
         self._clean_numeric_columns()
         
-        # 4. Clean categorical columns
         self._clean_categorical_columns()
         
-        # 5. Handle missing values
         self._handle_missing_values()
         
-        # 6. Add derived features
         self._create_derived_features()
         
         print(f"✅ Data cleaning completed!")
@@ -163,14 +158,12 @@ class DataProcessor:
         numeric_columns = self.cleaned_df.select_dtypes(include=[np.number]).columns
         
         for col in numeric_columns:
-            # Remove negative values for quantity and amount columns
             if any(keyword in col.lower() for keyword in ['qty', 'quantity', 'amount', 'price']):
                 negative_count = (self.cleaned_df[col] < 0).sum()
                 if negative_count > 0:
                     self.cleaned_df = self.cleaned_df[self.cleaned_df[col] >= 0]
                     print(f"✅ Removed {negative_count} negative values from {col}")
             
-            # Handle outliers using IQR method
             Q1 = self.cleaned_df[col].quantile(0.25)
             Q3 = self.cleaned_df[col].quantile(0.75)
             IQR = Q3 - Q1
@@ -186,15 +179,12 @@ class DataProcessor:
         categorical_columns = self.cleaned_df.select_dtypes(include=['object']).columns
         
         for col in categorical_columns:
-            # Skip datetime columns
             if self.cleaned_df[col].dtype == 'datetime64[ns]':
                 continue
                 
-            # Remove leading/trailing whitespace
             if self.cleaned_df[col].dtype == 'object':
                 self.cleaned_df[col] = self.cleaned_df[col].astype(str).str.strip()
                 
-            # Standardize case for certain columns
             if any(keyword in col.lower() for keyword in ['status', 'category', 'size']):
                 self.cleaned_df[col] = self.cleaned_df[col].str.title()
                 print(f"✅ Standardized case for {col}")
@@ -217,12 +207,10 @@ class DataProcessor:
             if missing_pct > 50:
                 print(f"⚠️ {col}: {missing_pct:.1f}% missing - Consider dropping column")
             elif self.cleaned_df[col].dtype in ['int64', 'float64']:
-                # Fill numeric columns with median
                 median_val = self.cleaned_df[col].median()
                 self.cleaned_df[col].fillna(median_val, inplace=True)
                 print(f"✅ {col}: Filled {missing_count} missing values with median ({median_val})")
             else:
-                # Fill categorical columns with mode or 'Unknown'
                 if len(self.cleaned_df[col].mode()) > 0:
                     mode_val = self.cleaned_df[col].mode()[0]
                     self.cleaned_df[col].fillna(mode_val, inplace=True)
@@ -235,7 +223,6 @@ class DataProcessor:
         """Create useful derived features"""
         print("🔧 Creating derived features...")
         
-        # Date-based features
         date_col = self.column_mapping.get('date')
         if date_col and date_col in self.cleaned_df.columns:
             self.cleaned_df['year'] = self.cleaned_df[date_col].dt.year
@@ -247,7 +234,6 @@ class DataProcessor:
         # Amount-based features
         amount_col = self.column_mapping.get('amount')
         if amount_col and amount_col in self.cleaned_df.columns:
-            # Ensure the column is numeric before binning
             self.cleaned_df[amount_col] = pd.to_numeric(self.cleaned_df[amount_col], errors='coerce')
             self.cleaned_df['order_value_category'] = pd.cut(
                 self.cleaned_df[amount_col],
@@ -256,7 +242,6 @@ class DataProcessor:
             )
             print("✅ Created order value categories")
         
-        # Quantity-based features
         qty_col = self.column_mapping.get('quantity')
         if qty_col and qty_col in self.cleaned_df.columns:
             self.cleaned_df['bulk_order'] = self.cleaned_df[qty_col] > self.cleaned_df[qty_col].quantile(0.8)
@@ -334,7 +319,6 @@ class DataProcessor:
                 'Memory_Usage_MB': self.cleaned_df[col].memory_usage(deep=True) / 1024**2
             }
             
-            # Add statistics for numeric columns
             if self.cleaned_df[col].dtype in ['int64', 'float64']:
                 col_info.update({
                     'Min': self.cleaned_df[col].min(),
@@ -348,29 +332,3 @@ class DataProcessor:
         
         summary_df = pd.DataFrame(summary_data)
         return summary_df
-
-# Example usage
-if __name__ == "__main__":
-    # Initialize processor
-    processor = DataProcessor()
-    
-    # Load data
-    data = processor.load_data('data/raw/amazon_sales_data.csv')
-    
-    if data is not None:
-        # Explore data
-        exploration_results = processor.explore_data()
-        
-        # Clean data
-        cleaned_data = processor.clean_data()
-        
-        # Get quality report
-        quality_report = processor.get_data_quality_report()
-        
-        # Get column summary
-        column_summary = processor.get_column_summary()
-        print("\n📊 COLUMN SUMMARY:")
-        print(column_summary.to_string(index=False))
-        
-        # Save cleaned data
-        processor.save_cleaned_data('data/processed/cleaned_amazon_data.csv')

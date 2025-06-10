@@ -10,7 +10,6 @@ def prepare_data(df):
     Prepare and clean data for analysis
     """
     df = df.copy()
-    # Convert date columns
     date_columns = ['Date', 'date', 'Order Date', 'order_date']
     for col in date_columns:
         if col in df.columns:
@@ -21,13 +20,11 @@ def prepare_data(df):
             df['day_of_week'] = df[col].dt.day_name()
             df['is_weekend'] = df[col].dt.weekday >= 5
             break
-    # Clean and convert amount columns
     amount_columns = ['Amount', 'amount', 'Sales', 'sales', 'Revenue', 'revenue']
     for col in amount_columns:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
             break
-    # Clean quantity columns
     qty_columns = ['Qty', 'qty', 'Quantity', 'quantity']
     for col in qty_columns:
         if col in df.columns:
@@ -223,7 +220,6 @@ def customer_segmentation_analysis(df):
 def business_insights_and_recommendations(insights):
     insights_out = {}
     recommendations = []
-    # Revenue insights
     if 'sales_overview' in insights:
         sales_data = insights['sales_overview']
         if 'sales_percentiles' in sales_data:
@@ -360,8 +356,3 @@ def _get_column(df, possible_names):
         if name in df.columns:
             return name
     return None
-
-
-df = pd.read_csv(Path('C:/Users/Administrator/Desktop/InnoByte Services Internship/amazon_sales_analysis/data/raw/amazon_sales_data.csv'))
-report = generate_comprehensive_report(df)
-print(report)
